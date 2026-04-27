@@ -1,0 +1,50 @@
+﻿{
+  "name": "Habit Forge - Premium Habit Tracking",
+  "short_name": "Habit Forge",
+  "description": "Build better habits with streaks, gamification, and analytics",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0e0b08",
+  "background_color": "#0e0b08",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23e8a83a' width='192' height='192'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='%230e0b08' text-anchor='middle' dominant-baseline='central'>🔥</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23e8a83a' width='512' height='512'/><text x='50%' y='50%' font-size='320' font-weight='bold' fill='%230e0b08' text-anchor='middle' dominant-baseline='central'>🔥</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%230e0b08' width='540' height='720'/><text x='270' y='360' font-size='200' text-anchor='middle' dominant-baseline='central'>🔥 HABIT FORGE</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Habit",
+      "short_name": "New Habit",
+      "description": "Quickly add a new habit to track",
+      "url": "/dashboard?action=new-habit",
+      "icons": []
+    },
+    {
+      "name": "Check Habits",
+      "short_name": "Check",
+      "description": "Check off today's habits",
+      "url": "/dashboard",
+      "icons": []
+    }
+  ]
+}
