@@ -1,7 +1,7 @@
-﻿{
+{
   "name": "habit-forge",
   "version": "1.0.0",
-  "description": "Premium habit tracking platform with advanced scheduling",
+  "description": "Premium habit tracking platform",
   "private": true,
   "scripts": {
     "dev": "next dev",
