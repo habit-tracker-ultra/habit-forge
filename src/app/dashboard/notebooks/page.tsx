@@ -1,280 +1,514 @@
-﻿"use client"
+﻿'use client';
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
-import { useAuth } from "@/context/AuthContext"
-import { Plus, BookOpen, Trash2, ChevronRight, FolderOpen, Search } from "lucide-react"
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { Plus, Edit2, Trash2, ChevronRight, Calendar, Target } from 'lucide-react';
+
+interface Notebook {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  task_count?: number;
+}
+
+interface Task {
+  id: string;
+  notebook_id: string;
+  title: string;
+  type: 'yes_no' | 'number';
+  target?: number;
+  unit?: string;
+  schedule_type: string;
+  created_at: string;
+}
 
 export default function NotebooksPage() {
-  const { user } = useAuth()
-  const [notebooks, setNotebooks] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [color, setColor] = useState("#e8a83a")
-  const [icon, setIcon] = useState("📓")
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
-  const [search, setSearch] = useState("")
-  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({})
+  const router = useRouter();
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [selectedNotebook, setSelectedNotebook] = useState<string | null>(null);
+  const [showCreateNotebook, setShowCreateNotebook] = useState(false);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [newNotebookName, setNewNotebookName] = useState('');
+  const [newNotebookDesc, setNewNotebookDesc] = useState('');
 
-  const colors = [
-    { value: "#e8a83a", label: "Gold" },
-    { value: "#4ade80", label: "Emerald" },
-    { value: "#60a5fa", label: "Blue" },
-    { value: "#f472b6", label: "Pink" },
-    { value: "#a78bfa", label: "Purple" },
-    { value: "#fb923c", label: "Orange" },
-    { value: "#34d399", label: "Teal" },
-    { value: "#f87171", label: "Red" },
-  ]
+  // Task creation state
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskType, setNewTaskType] = useState<'yes_no' | 'number'>('yes_no');
+  const [newTaskTarget, setNewTaskTarget] = useState('');
+  const [newTaskUnit, setNewTaskUnit] = useState('');
+  const [newTaskSchedule, setNewTaskSchedule] = useState('day');
 
-  const icons = ["📓", "💪", "🧠", "❤️", "🎯", "⭐", "📚", "🏃", "💤", "🎨", "💼", "🌱"]
-
-  useEffect(() => { fetchNotebooks() }, [])
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/auth/login');
+        return;
+      }
+      fetchNotebooks();
+    };
+    checkAuth();
+  }, [router]);
 
   const fetchNotebooks = async () => {
-    setLoading(true)
-    const { data } = await supabase.from("notebooks").select("*").order("created_at", { ascending: false })
-    if (data) {
-      setNotebooks(data)
-      const counts: Record<string, number> = {}
-      await Promise.all(data.map(async (nb) => {
-        const { count } = await supabase.from("tasks").select("*", { count: "exact", head: true }).eq("notebook_id", nb.id)
-        counts[nb.id] = count ?? 0
-      }))
-      setTaskCounts(counts)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: notebooksData, error: notebooksError } = await supabase
+        .from('notebooks')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (notebooksError) throw notebooksError;
+
+      // Fetch tasks for each notebook
+      if (notebooksData && notebooksData.length > 0) {
+        const allTasks: Record<string, Task[]> = {};
+
+        for (const notebook of notebooksData) {
+          const { data: tasksData } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('notebook_id', notebook.id);
+
+          allTasks[notebook.id] = tasksData || [];
+        }
+
+        setTasks(allTasks);
+      }
+
+      setNotebooks(notebooksData || []);
+    } catch (error) {
+      console.error('Error fetching notebooks:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false)
-  }
+  };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return
-    setSaving(true)
-    setError("")
-    const { error } = await supabase.from("notebooks").insert({
-      user_id: user?.id, name: name.trim(), description: description.trim(), color, icon,
-    })
-    if (error) { setError(error.message); setSaving(false) }
-    else {
-      setName(""); setDescription(""); setColor("#e8a83a"); setIcon("📓")
-      setShowModal(false); fetchNotebooks()
+  const handleCreateNotebook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNotebookName.trim()) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase.from('notebooks').insert([
+        {
+          user_id: session.user.id,
+          name: newNotebookName,
+          description: newNotebookDesc,
+        },
+      ]);
+
+      if (error) throw error;
+
+      setNewNotebookName('');
+      setNewNotebookDesc('');
+      setShowCreateNotebook(false);
+      fetchNotebooks();
+    } catch (error) {
+      console.error('Error creating notebook:', error);
     }
-    setSaving(false)
-  }
+  };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this notebook? Tasks will be unassigned.")) return
-    await supabase.from("notebooks").delete().eq("id", id)
-    fetchNotebooks()
-  }
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim() || !selectedNotebook) return;
 
-  const filtered = notebooks.filter(nb =>
-    nb.name.toLowerCase().includes(search.toLowerCase())
-  )
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const taskData: any = {
+        user_id: session.user.id,
+        notebook_id: selectedNotebook,
+        title: newTaskTitle,
+        type: newTaskType,
+        schedule_type: newTaskSchedule,
+        created_at: new Date().toISOString(),
+      };
+
+      if (newTaskType === 'number') {
+        taskData.target = newTaskTarget ? parseInt(newTaskTarget) : 0;
+        taskData.unit = newTaskUnit;
+      }
+
+      const { error } = await supabase.from('tasks').insert([taskData]);
+
+      if (error) throw error;
+
+      setNewTaskTitle('');
+      setNewTaskType('yes_no');
+      setNewTaskTarget('');
+      setNewTaskUnit('');
+      setNewTaskSchedule('day');
+      setShowCreateTask(false);
+      fetchNotebooks();
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
+  };
+
+  const handleDeleteNotebook = async (notebookId: string) => {
+    if (confirm('Delete this notebook and all tasks?')) {
+      try {
+        const { error } = await supabase
+          .from('notebooks')
+          .delete()
+          .eq('id', notebookId);
+
+        if (error) throw error;
+        if (selectedNotebook === notebookId) setSelectedNotebook(null);
+        fetchNotebooks();
+      } catch (error) {
+        console.error('Error deleting notebook:', error);
+      }
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (confirm('Delete this task?')) {
+      try {
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', taskId);
+
+        if (error) throw error;
+        fetchNotebooks();
+      } catch (error) {
+        console.error('Error deleting task:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        Loading your notebooks...
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: "32px", maxWidth: "1400px" }} className="animate-fade-in">
-
+    <div style={{ padding: '32px', maxWidth: '1400px' }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "32px" }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
-          <h1 style={{ color: "var(--text-primary)", fontWeight: 800, fontSize: "26px", letterSpacing: "-0.03em", marginBottom: "4px" }}>
-            Notebooks
+          <h1 style={{ color: 'var(--text-primary)', fontSize: '28px', fontWeight: 800, margin: '0 0 8px 0' }}>
+            📚 Notebooks
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
-            Organize your habits into focused collections
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>
+            Organize your goals into dedicated notebooks
           </p>
         </div>
-        <button onClick={() => setShowModal(true)} className="hf-btn-gold" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", fontSize: "13px" }}>
-          <Plus size={16} strokeWidth={2.5} />
-          New Notebook
+        <button
+          onClick={() => setShowCreateNotebook(true)}
+          className='hf-btn-gold'
+          style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 700 }}
+        >
+          <Plus size={16} /> New Notebook
         </button>
       </div>
 
-      {/* Search */}
-      {notebooks.length > 0 && (
-        <div style={{ position: "relative", marginBottom: "24px", maxWidth: "320px" }}>
-          <Search size={14} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search notebooks..."
-            style={{ width: "100%", padding: "9px 14px 9px 36px", borderRadius: "10px", fontSize: "13px" }}
-          />
-        </div>
-      )}
+      {/* Create Notebook Modal */}
+      {showCreateNotebook && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '20px', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: '20px', padding: '32px', maxWidth: '500px', width: '100%' }}>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 800, marginBottom: '24px' }}>Create New Notebook</h2>
 
-      {/* Grid */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "var(--text-tertiary)" }}>Loading...</div>
-      ) : filtered.length === 0 ? (
-        <div className="hf-card" style={{ padding: "80px 40px", textAlign: "center" }}>
-          <div style={{ width: "64px", height: "64px", borderRadius: "18px", background: "var(--bg-elevated)", border: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <FolderOpen size={28} style={{ color: "var(--text-tertiary)" }} />
-          </div>
-          <div style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "16px", marginBottom: "8px" }}>
-            {search ? "No Notebooks Found" : "No Notebooks Yet"}
-          </div>
-          <div style={{ color: "var(--text-tertiary)", fontSize: "13px", marginBottom: "24px" }}>
-            {search ? "Try a different search term." : "Create your first notebook to organize habits."}
-          </div>
-          {!search && (
-            <button onClick={() => setShowModal(true)} className="hf-btn-gold" style={{ padding: "10px 24px", fontSize: "13px" }}>
-              Create Notebook
-            </button>
-          )}
-        </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-          {filtered.map((notebook) => (
-            <div
-              key={notebook.id}
-              className="hf-card"
-              style={{ padding: "24px", cursor: "pointer", position: "relative", overflow: "hidden" }}
-            >
-              {/* Color Accent */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: notebook.color, borderRadius: "16px 16px 0 0" }} />
-
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
-                <div
-                  style={{
-                    width: "48px", height: "48px", borderRadius: "14px",
-                    background: `${notebook.color}15`,
-                    border: `1px solid ${notebook.color}30`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "22px",
-                  }}
-                >
-                  {notebook.icon}
-                </div>
-                <button
-                  onClick={() => handleDelete(notebook.id)}
-                  style={{
-                    width: "30px", height: "30px", borderRadius: "8px",
-                    background: "transparent", border: "1px solid transparent",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", color: "var(--text-tertiary)",
-                    transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"
-                    ;(e.currentTarget as HTMLElement).style.borderColor = "rgba(239,68,68,0.2)"
-                    ;(e.currentTarget as HTMLElement).style.color = "#ef4444"
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.background = "transparent"
-                    ;(e.currentTarget as HTMLElement).style.borderColor = "transparent"
-                    ;(e.currentTarget as HTMLElement).style.color = "var(--text-tertiary)"
-                  }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-
-              <h3 style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "15px", marginBottom: "4px", letterSpacing: "-0.01em" }}>
-                {notebook.name}
-              </h3>
-              {notebook.description && (
-                <p style={{ color: "var(--text-tertiary)", fontSize: "12px", marginBottom: "16px" }}>
-                  {notebook.description}
-                </p>
-              )}
-
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "12px", borderTop: "1px solid var(--border-subtle)", marginTop: notebook.description ? "0" : "16px" }}>
-                <span style={{ color: "var(--text-tertiary)", fontSize: "11px", fontWeight: 600 }}>
-                  {taskCounts[notebook.id] ?? 0} HABITS
-                </span>
-                <ChevronRight size={14} style={{ color: "var(--text-tertiary)" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Modal */}
-      {showModal && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: "16px" }}
-          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}
-        >
-          <div
-            className="animate-fade-in"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "20px", padding: "32px", width: "100%", maxWidth: "460px", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+            <form onSubmit={handleCreateNotebook} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <h2 style={{ color: "var(--text-primary)", fontWeight: 800, fontSize: "18px", letterSpacing: "-0.02em" }}>
-                  New Notebook
-                </h2>
-                <p style={{ color: "var(--text-tertiary)", fontSize: "12px", marginTop: "2px" }}>
-                  Group related habits together
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="hf-btn-ghost"
-                style={{ width: "32px", height: "32px", padding: "0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}
-              >
-                ×
-              </button>
-            </div>
-
-            {error && (
-              <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", color: "#ef4444", fontSize: "12px" }}>
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleCreate}>
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ color: "var(--text-secondary)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", display: "block", marginBottom: "6px" }}>NAME *</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Morning Routine" required style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", fontSize: "13px" }} />
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>NOTEBOOK NAME</label>
+                <input
+                  type='text'
+                  value={newNotebookName}
+                  onChange={(e) => setNewNotebookName(e.target.value)}
+                  placeholder='e.g., CAT Preparation, Fitness Goals'
+                  style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ color: "var(--text-secondary)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", display: "block", marginBottom: "6px" }}>DESCRIPTION</label>
-                <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional description" style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", fontSize: "13px" }} />
+              <div>
+                <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>DESCRIPTION (Optional)</label>
+                <textarea
+                  value={newNotebookDesc}
+                  onChange={(e) => setNewNotebookDesc(e.target.value)}
+                  placeholder='What is this notebook for?'
+                  style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box', minHeight: '80px', fontFamily: 'inherit' }}
+                />
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ color: "var(--text-secondary)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", display: "block", marginBottom: "8px" }}>ICON</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {icons.map(i => (
-                    <button key={i} type="button" onClick={() => setIcon(i)}
-                      style={{ width: "38px", height: "38px", borderRadius: "10px", fontSize: "18px", border: icon === i ? "2px solid var(--gold)" : "1px solid var(--border-default)", background: icon === i ? "var(--gold-glow)" : "var(--bg-elevated)", cursor: "pointer", transition: "all 0.15s ease" }}>
-                      {i}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ color: "var(--text-secondary)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", display: "block", marginBottom: "8px" }}>COLOR</label>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  {colors.map(c => (
-                    <button key={c.value} type="button" onClick={() => setColor(c.value)}
-                      style={{ width: "28px", height: "28px", borderRadius: "99px", background: c.value, border: color === c.value ? "3px solid var(--text-primary)" : "2px solid transparent", cursor: "pointer", transition: "all 0.15s ease", boxShadow: color === c.value ? `0 0 0 2px ${c.value}` : "none" }}>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button type="button" onClick={() => setShowModal(false)} className="hf-btn-ghost" style={{ flex: 1, padding: "11px", fontSize: "13px" }}>
-                  Cancel
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type='submit'
+                  className='hf-btn-gold'
+                  style={{ flex: 1, padding: '12px', fontSize: '14px', fontWeight: 700 }}
+                >
+                  Create Notebook
                 </button>
-                <button type="submit" disabled={saving} className="hf-btn-gold" style={{ flex: 1, padding: "11px", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                  {saving ? "Creating..." : <><Plus size={14} /> Create</>}
+                <button
+                  type='button'
+                  onClick={() => setShowCreateNotebook(false)}
+                  style={{ flex: 1, padding: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Main Content - Two Column Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+        {/* Notebooks List */}
+        <div>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: '16px', overflow: 'hidden' }}>
+            {notebooks.length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                <p style={{ fontSize: '14px', margin: 0 }}>No notebooks yet</p>
+                <p style={{ fontSize: '12px', margin: '8px 0 0 0' }}>Create your first notebook to get started</p>
+              </div>
+            ) : (
+              notebooks.map((notebook) => (
+                <div
+                  key={notebook.id}
+                  onClick={() => setSelectedNotebook(notebook.id)}
+                  style={{
+                    padding: '16px',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    cursor: 'pointer',
+                    background: selectedNotebook === notebook.id ? 'var(--bg-elevated)' : 'transparent',
+                    borderLeft: selectedNotebook === notebook.id ? '4px solid var(--gold)' : '4px solid transparent',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedNotebook !== notebook.id) {
+                      e.currentTarget.style.background = 'var(--bg-card-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedNotebook !== notebook.id) {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, margin: '0 0 4px 0' }}>
+                        {notebook.name}
+                      </h3>
+                      <p style={{ color: 'var(--text-tertiary)', fontSize: '12px', margin: '0 0 8px 0' }}>
+                        {tasks[notebook.id]?.length || 0} tasks
+                      </p>
+                      {notebook.description && (
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '12px', margin: 0 }}>
+                          {notebook.description}
+                        </p>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleDeleteNotebook(notebook.id)}
+                        style={{ padding: '6px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Notebook Details / Tasks */}
+        <div>
+          {selectedNotebook ? (
+            <div>
+              {/* Tasks Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div>
+                  <h2 style={{ color: 'var(--text-primary)', fontSize: '22px', fontWeight: 800, margin: '0 0 4px 0' }}>
+                    {notebooks.find((n) => n.id === selectedNotebook)?.name}
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
+                    {tasks[selectedNotebook]?.length || 0} tasks in this notebook
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCreateTask(true)}
+                  className='hf-btn-gold'
+                  style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 700 }}
+                >
+                  <Plus size={16} /> Add Task
+                </button>
+              </div>
+
+              {/* Create Task Modal */}
+              {showCreateTask && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '20px', backdropFilter: 'blur(4px)' }}>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: '20px', padding: '32px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 800, marginBottom: '24px' }}>Add Task to Notebook</h2>
+
+                    <form onSubmit={handleCreateTask} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Task Title */}
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>TASK TITLE</label>
+                        <input
+                          type='text'
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          placeholder='e.g., Read 50 pages, Write 1000 words'
+                          required
+                          style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* Task Type */}
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>TASK TYPE</label>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                          {[
+                            { value: 'yes_no', label: '✓ Yes/No (Did I do it?)' },
+                            { value: 'number', label: '📊 Number (Track quantity)' },
+                          ].map((type) => (
+                            <label key={type.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 }}>
+                              <input
+                                type='radio'
+                                name='taskType'
+                                value={type.value}
+                                checked={newTaskType === type.value}
+                                onChange={(e) => setNewTaskType(e.target.value as 'yes_no' | 'number')}
+                                style={{ cursor: 'pointer' }}
+                              />
+                              <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500 }}>{type.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Number Tracking Options */}
+                      {newTaskType === 'number' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          <div>
+                            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>TARGET</label>
+                            <input
+                              type='number'
+                              value={newTaskTarget}
+                              onChange={(e) => setNewTaskTarget(e.target.value)}
+                              placeholder='e.g., 50'
+                              style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>UNIT</label>
+                            <input
+                              type='text'
+                              value={newTaskUnit}
+                              onChange={(e) => setNewTaskUnit(e.target.value)}
+                              placeholder='e.g., pages, words'
+                              style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box' }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Schedule Type */}
+                      <div>
+                        <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>SCHEDULE</label>
+                        <select
+                          value={newTaskSchedule}
+                          onChange={(e) => setNewTaskSchedule(e.target.value)}
+                          style={{ width: '100%', padding: '12px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '13px', boxSizing: 'border-box' }}
+                        >
+                          <option value='day'>Daily</option>
+                          <option value='week'>Weekly</option>
+                          <option value='month'>Monthly</option>
+                          <option value='year'>Yearly</option>
+                        </select>
+                      </div>
+
+                      {/* Buttons */}
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                          type='submit'
+                          className='hf-btn-gold'
+                          style={{ flex: 1, padding: '12px', fontSize: '14px', fontWeight: 700 }}
+                        >
+                          Add Task
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => setShowCreateTask(false)}
+                          style={{ flex: 1, padding: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', borderRadius: '10px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Tasks List */}
+              <div style={{ display: 'grid', gap: '16px' }}>
+                {tasks[selectedNotebook] && tasks[selectedNotebook].length > 0 ? (
+                  tasks[selectedNotebook].map((task) => (
+                    <div key={task.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: '14px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 700, margin: '0 0 8px 0' }}>
+                          {task.title}
+                        </h3>
+                        <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                          <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Target size={13} /> {task.type === 'yes_no' ? '✓ Yes/No' : '📊 Number'}
+                          </span>
+                          <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar size={13} /> {task.schedule_type}
+                          </span>
+                          {task.type === 'number' && task.target && (
+                            <span style={{ color: 'var(--text-secondary)' }}>
+                              Target: {task.target} {task.unit}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        style={{ padding: '8px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '14px', color: 'var(--text-tertiary)' }}>
+                    <p style={{ fontSize: '14px', margin: 0 }}>No tasks in this notebook yet</p>
+                    <p style={{ fontSize: '12px', margin: '8px 0 0 0' }}>Click "Add Task" to create your first task</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '60px 32px', textAlign: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-default)', borderRadius: '16px', color: 'var(--text-tertiary)' }}>
+              <p style={{ fontSize: '16px', margin: 0 }}>Select a notebook to view and manage tasks</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  )
+  );
 }
