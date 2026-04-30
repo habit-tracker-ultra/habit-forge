@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -36,12 +36,10 @@ export default function LoginPage() {
         overflow: "hidden",
       }}
     >
-      {/* Background Glow */}
       <div style={{ position: "absolute", top: "-200px", left: "50%", transform: "translateX(-50%)", width: "600px", height: "400px", background: "radial-gradient(ellipse, rgba(232,168,58,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
 
       <div style={{ width: "100%", maxWidth: "400px" }} className="animate-fade-in">
 
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
             <div style={{ width: "44px", height: "44px", borderRadius: "14px", background: "linear-gradient(135deg, #e8a83a, #c8901e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(232,168,58,0.25)" }}>
@@ -55,7 +53,6 @@ export default function LoginPage() {
           <p style={{ color: "var(--text-tertiary)", fontSize: "13px" }}>Forge your habits. Build your legacy.</p>
         </div>
 
-        {/* Card */}
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "20px", padding: "32px", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
           <h2 style={{ color: "var(--text-primary)", fontWeight: 800, fontSize: "20px", letterSpacing: "-0.02em", marginBottom: "6px" }}>
             Welcome back
@@ -79,7 +76,7 @@ export default function LoginPage() {
             <div style={{ marginBottom: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                 <label style={{ color: "var(--text-secondary)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em" }}>PASSWORD</label>
-                <Link href="/auth/forgot-password" style={{ color: "var(--gold)", fontSize: "11px", fontWeight: 600, textDecoration: "none", hover: { opacity: 0.8 } }}>
+                <Link href="/auth/forgot-password" style={{ color: "var(--gold)", fontSize: "11px", fontWeight: 600, textDecoration: "none" }}>
                   Forgot?
                 </Link>
               </div>
