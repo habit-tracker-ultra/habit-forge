@@ -3,14 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Plus, Edit2, Trash2, ChevronRight, Calendar, Target } from 'lucide-react';
+import { Plus, Trash2, Calendar, Target } from 'lucide-react';
 
 interface Notebook {
   id: string;
   name: string;
   description: string;
   created_at: string;
-  task_count?: number;
 }
 
 interface Task {
@@ -67,7 +66,6 @@ export default function NotebooksPage() {
 
       if (notebooksError) throw notebooksError;
 
-      // Fetch tasks for each notebook
       if (notebooksData && notebooksData.length > 0) {
         const allTasks: Record<string, Task[]> = {};
 
@@ -115,6 +113,7 @@ export default function NotebooksPage() {
       fetchNotebooks();
     } catch (error) {
       console.error('Error creating notebook:', error);
+      alert('Error creating notebook: ' + error);
     }
   };
 
@@ -132,17 +131,24 @@ export default function NotebooksPage() {
         title: newTaskTitle,
         type: newTaskType,
         schedule_type: newTaskSchedule,
-        created_at: new Date().toISOString(),
       };
 
       if (newTaskType === 'number') {
         taskData.target = newTaskTarget ? parseInt(newTaskTarget) : 0;
-        taskData.unit = newTaskUnit;
+        taskData.unit = newTaskUnit || '';
       }
 
-      const { error } = await supabase.from('tasks').insert([taskData]);
+      console.log('Creating task with data:', taskData);
 
-      if (error) throw error;
+      const { data, error } = await supabase.from('tasks').insert([taskData]).select();
+
+      if (error) {
+        console.error('Task creation error:', error);
+        alert('Error: ' + error.message);
+        return;
+      }
+
+      console.log('Task created:', data);
 
       setNewTaskTitle('');
       setNewTaskType('yes_no');
@@ -152,7 +158,8 @@ export default function NotebooksPage() {
       setShowCreateTask(false);
       fetchNotebooks();
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Unexpected error:', error);
+      alert('Something went wrong: ' + error);
     }
   };
 
@@ -169,6 +176,7 @@ export default function NotebooksPage() {
         fetchNotebooks();
       } catch (error) {
         console.error('Error deleting notebook:', error);
+        alert('Error deleting notebook');
       }
     }
   };
@@ -185,6 +193,7 @@ export default function NotebooksPage() {
         fetchNotebooks();
       } catch (error) {
         console.error('Error deleting task:', error);
+        alert('Error deleting task');
       }
     }
   };
@@ -292,12 +301,12 @@ export default function NotebooksPage() {
                   }}
                   onMouseEnter={(e) => {
                     if (selectedNotebook !== notebook.id) {
-                      e.currentTarget.style.background = 'var(--bg-card-hover)';
+                      (e.currentTarget as HTMLElement).style.background = 'var(--bg-card-hover)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (selectedNotebook !== notebook.id) {
-                      e.currentTarget.style.background = 'transparent';
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
                     }
                   }}
                 >
@@ -319,8 +328,8 @@ export default function NotebooksPage() {
                       <button
                         onClick={() => handleDeleteNotebook(notebook.id)}
                         style={{ padding: '6px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#ef4444' }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-tertiary)' }}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -379,22 +388,28 @@ export default function NotebooksPage() {
                       <div>
                         <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>TASK TYPE</label>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                          {[
-                            { value: 'yes_no', label: '✓ Yes/No (Did I do it?)' },
-                            { value: 'number', label: '📊 Number (Track quantity)' },
-                          ].map((type) => (
-                            <label key={type.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1 }}>
-                              <input
-                                type='radio'
-                                name='taskType'
-                                value={type.value}
-                                checked={newTaskType === type.value}
-                                onChange={(e) => setNewTaskType(e.target.value as 'yes_no' | 'number')}
-                                style={{ cursor: 'pointer' }}
-                              />
-                              <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500 }}>{type.label}</span>
-                            </label>
-                          ))}
+                          <label key='yes_no' style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, padding: '12px', background: newTaskType === 'yes_no' ? 'rgba(232,168,58,0.1)' : 'transparent', border: '1px solid ' + (newTaskType === 'yes_no' ? 'var(--gold)' : 'var(--border-default)'), borderRadius: '10px', transition: 'all 0.2s ease' }}>
+                            <input
+                              type='radio'
+                              name='taskType'
+                              value='yes_no'
+                              checked={newTaskType === 'yes_no'}
+                              onChange={(e) => setNewTaskType(e.target.value as 'yes_no' | 'number')}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500 }}>✓ Yes/No</span>
+                          </label>
+                          <label key='number' style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, padding: '12px', background: newTaskType === 'number' ? 'rgba(232,168,58,0.1)' : 'transparent', border: '1px solid ' + (newTaskType === 'number' ? 'var(--gold)' : 'var(--border-default)'), borderRadius: '10px', transition: 'all 0.2s ease' }}>
+                            <input
+                              type='radio'
+                              name='taskType'
+                              value='number'
+                              checked={newTaskType === 'number'}
+                              onChange={(e) => setNewTaskType(e.target.value as 'yes_no' | 'number')}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500 }}>📊 Number</span>
+                          </label>
                         </div>
                       </div>
 
@@ -470,9 +485,9 @@ export default function NotebooksPage() {
                         <h3 style={{ color: 'var(--text-primary)', fontSize: '15px', fontWeight: 700, margin: '0 0 8px 0' }}>
                           {task.title}
                         </h3>
-                        <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', fontSize: '12px', flexWrap: 'wrap' }}>
                           <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Target size={13} /> {task.type === 'yes_no' ? '✓ Yes/No' : '📊 Number'}
+                            {task.type === 'yes_no' ? '✓ Yes/No' : '📊 Number'}
                           </span>
                           <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Calendar size={13} /> {task.schedule_type}
@@ -487,8 +502,8 @@ export default function NotebooksPage() {
                       <button
                         onClick={() => handleDeleteTask(task.id)}
                         style={{ padding: '8px', background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = '#ef4444' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#ef4444' }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-tertiary)' }}
                       >
                         <Trash2 size={16} />
                       </button>
