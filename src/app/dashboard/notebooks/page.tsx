@@ -125,22 +125,22 @@ export default function NotebooksPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const taskData: any = {
+      const taskData = {
         user_id: session.user.id,
         notebook_id: selectedNotebook,
         title: newTaskTitle,
         type: newTaskType,
         schedule_type: newTaskSchedule,
+        target: newTaskType === 'number' ? (newTaskTarget ? parseInt(newTaskTarget) : 0) : null,
+        unit: newTaskType === 'number' ? (newTaskUnit || null) : null,
       };
-
-      if (newTaskType === 'number') {
-        taskData.target = newTaskTarget ? parseInt(newTaskTarget) : 0;
-        taskData.unit = newTaskUnit || '';
-      }
 
       console.log('Creating task with data:', taskData);
 
-      const { data, error } = await supabase.from('tasks').insert([taskData]).select();
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([taskData])
+        .select();
 
       if (error) {
         console.error('Task creation error:', error);
@@ -148,7 +148,7 @@ export default function NotebooksPage() {
         return;
       }
 
-      console.log('Task created:', data);
+      console.log('Task created successfully:', data);
 
       setNewTaskTitle('');
       setNewTaskType('yes_no');
@@ -156,10 +156,10 @@ export default function NotebooksPage() {
       setNewTaskUnit('');
       setNewTaskSchedule('day');
       setShowCreateTask(false);
-      fetchNotebooks();
+      await fetchNotebooks();
     } catch (error) {
       console.error('Unexpected error:', error);
-      alert('Something went wrong: ' + error);
+      alert('Error: ' + String(error));
     }
   };
 
@@ -388,7 +388,7 @@ export default function NotebooksPage() {
                       <div>
                         <label style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>TASK TYPE</label>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                          <label key='yes_no' style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, padding: '12px', background: newTaskType === 'yes_no' ? 'rgba(232,168,58,0.1)' : 'transparent', border: '1px solid ' + (newTaskType === 'yes_no' ? 'var(--gold)' : 'var(--border-default)'), borderRadius: '10px', transition: 'all 0.2s ease' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, padding: '12px', background: newTaskType === 'yes_no' ? 'rgba(232,168,58,0.1)' : 'transparent', border: '1px solid ' + (newTaskType === 'yes_no' ? 'var(--gold)' : 'var(--border-default)'), borderRadius: '10px', transition: 'all 0.2s ease' }}>
                             <input
                               type='radio'
                               name='taskType'
@@ -399,7 +399,7 @@ export default function NotebooksPage() {
                             />
                             <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 500 }}>✓ Yes/No</span>
                           </label>
-                          <label key='number' style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, padding: '12px', background: newTaskType === 'number' ? 'rgba(232,168,58,0.1)' : 'transparent', border: '1px solid ' + (newTaskType === 'number' ? 'var(--gold)' : 'var(--border-default)'), borderRadius: '10px', transition: 'all 0.2s ease' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flex: 1, padding: '12px', background: newTaskType === 'number' ? 'rgba(232,168,58,0.1)' : 'transparent', border: '1px solid ' + (newTaskType === 'number' ? 'var(--gold)' : 'var(--border-default)'), borderRadius: '10px', transition: 'all 0.2s ease' }}>
                             <input
                               type='radio'
                               name='taskType'
