@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Flame, ArrowRight, Zap, TrendingUp, Clock } from "lucide-react"
+import { ArrowRight, Zap, TrendingUp, Clock } from "lucide-react"
 
 export default function LandingPage() {
   const [showWaitlist, setShowWaitlist] = useState(false)
@@ -11,7 +11,6 @@ export default function LandingPage() {
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle waitlist submission here
     console.log("Waitlist:", { waitlistName, waitlistEmail })
     setShowWaitlist(false)
     setWaitlistEmail("")
@@ -27,8 +26,8 @@ export default function LandingPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 40px", borderBottom: "1px solid var(--border-subtle)", position: "relative", zIndex: 10 }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "linear-gradient(135deg, #e8a83a, #c8901e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(232,168,58,0.25)" }}>
-            <Flame size={20} color="#0a0a0b" strokeWidth={2.5} />
+          <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "linear-gradient(135deg, #e8a83a, #c8901e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(232,168,58,0.25)", overflow: "hidden" }}>
+            <img src="/logo.png" alt="Habit Forge" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
             <div style={{ color: "var(--text-primary)", fontWeight: 900, fontSize: "18px" }}>HABIT FORGE</div>

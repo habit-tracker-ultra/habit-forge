@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
-import { Eye, EyeOff, Flame, LogIn, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, LogIn, ArrowRight } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -42,8 +42,8 @@ export default function LoginPage() {
 
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-            <div style={{ width: "44px", height: "44px", borderRadius: "14px", background: "linear-gradient(135deg, #e8a83a, #c8901e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(232,168,58,0.25)" }}>
-              <Flame size={22} color="#0a0a0b" strokeWidth={2.5} />
+            <div style={{ width: "44px", height: "44px", borderRadius: "14px", background: "linear-gradient(135deg, #e8a83a, #c8901e)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(232,168,58,0.25)", overflow: "hidden" }}>
+              <img src="/logo.png" alt="Habit Forge" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <div style={{ textAlign: "left" }}>
               <div style={{ color: "var(--text-primary)", fontWeight: 900, fontSize: "20px", letterSpacing: "-0.03em" }}>HABIT FORGE</div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: "14px" }}>
               <label style={{ color: "var(--text-secondary)", fontSize: "11px", fontWeight: 700, letterSpacing: "0.06em", display: "block", marginBottom: "6px" }}>EMAIL</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required style={{ width: "100%", padding: "11px 14px", borderRadius: "10px", fontSize: "13px" }} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required style={{ width: "100%", padding: "11px 14px", borderRadius: "10px", fontSize: "13px", background: "var(--bg-secondary)", border: "1px solid var(--border-default)", color: "var(--text-primary)", boxSizing: "border-box" }} />
             </div>
 
             <div style={{ marginBottom: "20px" }}>
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div style={{ position: "relative" }}>
-                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required style={{ width: "100%", padding: "11px 44px 11px 14px", borderRadius: "10px", fontSize: "13px" }} />
+                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required style={{ width: "100%", padding: "11px 44px 11px 14px", borderRadius: "10px", fontSize: "13px", background: "var(--bg-secondary)", border: "1px solid var(--border-default)", color: "var(--text-primary)", boxSizing: "border-box" }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", display: "flex", alignItems: "center" }}>
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}

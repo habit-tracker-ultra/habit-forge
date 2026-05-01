@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Flame, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -45,8 +45,8 @@ export default function ForgotPassword() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'linear-gradient(135deg, #e8a83a, #c8901e)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(232,168,58,0.25)' }}>
-              <Flame size={22} color='#0a0a0b' strokeWidth={2.5} />
+            <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'linear-gradient(135deg, #e8a83a, #c8901e)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(232,168,58,0.25)', overflow: 'hidden' }}>
+              <img src='/logo.png' alt='Habit Forge' style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '20px', letterSpacing: '-0.03em' }}>HABIT FORGE</div>
@@ -73,7 +73,7 @@ export default function ForgotPassword() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder='you@example.com'
                 required
-                style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', fontSize: '13px' }}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', fontSize: '13px', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', boxSizing: 'border-box' }}
               />
             </div>
 
