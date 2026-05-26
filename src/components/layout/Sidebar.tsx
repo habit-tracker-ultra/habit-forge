@@ -52,15 +52,20 @@ export default function Sidebar() {
       {/* Logo Section */}
       <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href='/dashboard' style={{ display: 'flex', alignItems: 'center', gap: isCollapsed ? 0 : '12px', textDecoration: 'none', minWidth: 0 }}>
-          {/* Logo Image */}
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #e8a83a, #c8901e)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-            <img 
-              src='/logo.png?v=1' 
-              alt='Habit Forge' 
-              style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }} 
-              loading="eager"
-              decoding="async"
-            />
+          {/* Gold Logo Box with Infinity Symbol */}
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            borderRadius: '12px', 
+            background: 'linear-gradient(135deg, #e8a83a, #c8901e)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            fontSize: '20px',
+            fontWeight: 'bold'
+          }}>
+            ∞
           </div>
 
           {!isCollapsed && (
