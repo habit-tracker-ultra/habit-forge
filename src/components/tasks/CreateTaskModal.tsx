@@ -21,7 +21,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
   const [unit, setUnit] = useState("")
   
   // Schedule Type
-  const [scheduleType, setScheduleType] = useState<"daily" | "weekly" | "monthly" | "yearly" | "custom">("weekly")
+  const [scheduleType, setScheduleType] = useState<"daily" | "weekly" | "custom">("weekly")
   
   // Day only (for "day" type)
   const [dayOnlyDate, setDayOnlyDate] = useState(new Date().toISOString().split("T")[0])
@@ -29,14 +29,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
   // Week (for "week" type)
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6])
   
-  // Month (for "month" type)
-  const [monthDates, setMonthDates] = useState<number[]>(Array.from({ length: 28 }, (_, i) => i + 1))
-  const [showAllMonthDates, setShowAllMonthDates] = useState(false)
-  
-  // Year (for "year" type)
-  const [yearDate, setYearDate] = useState(new Date().toISOString().split("T")[0])
-  
-  // Date Range (for "daterange" type)
+  // Date Range (for "custom" type)
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0])
   const [endDate, setEndDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
   
@@ -47,10 +40,6 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
 
   const toggleDay = (day: number) => {
     setSelectedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])
-  }
-
-  const toggleMonthDate = (date: number) => {
-    setMonthDates(prev => prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date])
   }
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -65,10 +54,6 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
       scheduleData = { schedule_type: "daily", schedule_date: dayOnlyDate }
     } else if (scheduleType === "weekly") {
       scheduleData = { schedule_type: "weekly", schedule_days: selectedDays }
-    } else if (scheduleType === "monthly") {
-      scheduleData = { schedule_type: "monthly", schedule_dates: monthDates }
-    } else if (scheduleType === "yearly") {
-      scheduleData = { schedule_type: "yearly", schedule_date: yearDate }
     } else if (scheduleType === "custom") {
       scheduleData = { schedule_type: "custom", start_date: startDate, end_date: endDate }
     }
@@ -357,10 +342,8 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px", marginBottom: "12px" }}>
               {[
-                { key: "daily", label: "Today Only" },
+                { key: "daily", label: "Daily" },
                 { key: "weekly", label: "Weekly" },
-                { key: "monthly", label: "Monthly" },
-                { key: "yearly", label: "Yearly" },
                 { key: "custom", label: "Date Range", span: 2 },
               ].map(s => (
                 <button
@@ -426,64 +409,6 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Monthly */}
-            {scheduleType === "monthly" && (
-              <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700 }}>PICK DATES (1-31)</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowAllMonthDates(!showAllMonthDates)}
-                    style={{
-                      fontSize: "10px",
-                      color: "var(--gold)",
-                      fontWeight: 700,
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {showAllMonthDates ? "Hide" : "Show All"}
-                  </button>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "3px", maxHeight: showAllMonthDates ? "200px" : "80px", overflowY: "auto" }}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(date => (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => toggleMonthDate(date)}
-                      style={{
-                        padding: "5px",
-                        borderRadius: "6px",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        border: "none",
-                        background: monthDates.includes(date) ? "var(--gold)" : "var(--bg-elevated)",
-                        color: monthDates.includes(date) ? "#0a0a0b" : "var(--text-tertiary)",
-                        transition: "all 0.1s ease",
-                      }}
-                    >
-                      {date}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Yearly */}
-            {scheduleType === "yearly" && (
-              <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
-                <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700, display: "block", marginBottom: "6px" }}>SELECT MONTH & DAY</label>
-                <input
-                  type="date"
-                  value={yearDate}
-                  onChange={e => setYearDate(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", fontSize: "12px" }}
-                />
               </div>
             )}
 
