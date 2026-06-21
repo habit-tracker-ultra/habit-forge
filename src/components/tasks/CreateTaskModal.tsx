@@ -21,7 +21,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
   const [unit, setUnit] = useState("")
   
   // Schedule Type
-  const [scheduleType, setScheduleType] = useState<"day" | "week" | "month" | "year" | "daterange">("week")
+  const [scheduleType, setScheduleType] = useState<"daily" | "weekly" | "monthly" | "yearly" | "custom">("weekly")
   
   // Day only (for "day" type)
   const [dayOnlyDate, setDayOnlyDate] = useState(new Date().toISOString().split("T")[0])
@@ -61,16 +61,16 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
 
     let scheduleData: any = {}
 
-    if (scheduleType === "day") {
-      scheduleData = { schedule_type: "day", schedule_date: dayOnlyDate }
-    } else if (scheduleType === "week") {
-      scheduleData = { schedule_type: "week", schedule_days: selectedDays }
-    } else if (scheduleType === "month") {
-      scheduleData = { schedule_type: "month", schedule_dates: monthDates }
-    } else if (scheduleType === "year") {
-      scheduleData = { schedule_type: "year", schedule_date: yearDate }
-    } else if (scheduleType === "daterange") {
-      scheduleData = { schedule_type: "daterange", start_date: startDate, end_date: endDate }
+    if (scheduleType === "daily") {
+      scheduleData = { schedule_type: "daily", schedule_date: dayOnlyDate }
+    } else if (scheduleType === "weekly") {
+      scheduleData = { schedule_type: "weekly", schedule_days: selectedDays }
+    } else if (scheduleType === "monthly") {
+      scheduleData = { schedule_type: "monthly", schedule_dates: monthDates }
+    } else if (scheduleType === "yearly") {
+      scheduleData = { schedule_type: "yearly", schedule_date: yearDate }
+    } else if (scheduleType === "custom") {
+      scheduleData = { schedule_type: "custom", start_date: startDate, end_date: endDate }
     }
 
     const { error } = await supabase.from("tasks").insert({
@@ -357,11 +357,11 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px", marginBottom: "12px" }}>
               {[
-                { key: "day", label: "Today Only" },
-                { key: "week", label: "Weekly" },
-                { key: "month", label: "Monthly" },
-                { key: "year", label: "Yearly" },
-                { key: "daterange", label: "Date Range", span: 2 },
+                { key: "daily", label: "Today Only" },
+                { key: "weekly", label: "Weekly" },
+                { key: "monthly", label: "Monthly" },
+                { key: "yearly", label: "Yearly" },
+                { key: "custom", label: "Date Range", span: 2 },
               ].map(s => (
                 <button
                   key={s.key}
@@ -387,7 +387,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             </div>
 
             {/* Day Only */}
-            {scheduleType === "day" && (
+            {scheduleType === "daily" && (
               <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                 <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700, display: "block", marginBottom: "6px" }}>SELECT DATE</label>
                 <input
@@ -400,7 +400,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             )}
 
             {/* Weekly */}
-            {scheduleType === "week" && (
+            {scheduleType === "weekly" && (
               <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                 <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700, display: "block", marginBottom: "8px" }}>PICK DAYS</label>
                 <div style={{ display: "flex", gap: "4px" }}>
@@ -430,7 +430,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             )}
 
             {/* Monthly */}
-            {scheduleType === "month" && (
+            {scheduleType === "monthly" && (
               <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                   <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700 }}>PICK DATES (1-31)</label>
@@ -475,7 +475,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             )}
 
             {/* Yearly */}
-            {scheduleType === "year" && (
+            {scheduleType === "yearly" && (
               <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                 <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700, display: "block", marginBottom: "6px" }}>SELECT MONTH & DAY</label>
                 <input
@@ -488,7 +488,7 @@ export default function CreateTaskModal({ notebooks, onClose, onCreated }: any) 
             )}
 
             {/* Date Range */}
-            {scheduleType === "daterange" && (
+            {scheduleType === "custom" && (
               <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
                 <label style={{ color: "var(--text-tertiary)", fontSize: "10px", fontWeight: 700, display: "block", marginBottom: "6px" }}>FROM</label>
                 <input
